@@ -58,18 +58,26 @@ class _MrzScanState extends State<MrzScan> {
                         Icon(
                           Icons.person, // Icône à gauche
                           size: 100, // Taille de l'icône
-                          color: Colors.white
-                              .withOpacity(0.8), // Couleur de l'icône
+                          color: (mrzLine1.isDetected && mrzLine2.isDetected)
+                              ? Colors.green
+                              : Colors.white
+                                  .withOpacity(0.8), // Couleur de l'icône
                         ),
                         Padding(
                           padding: const EdgeInsets.all(18.0),
                           child: SizedBox(
                             width: MediaQuery.of(context).size.width / 1.2,
-                            child: const Text(
-                              ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 20),
-                            ),
+                            child: (mrzLine1.isDetected && mrzLine2.isDetected)
+                                ? Text(
+                                    '${mrzLine1.text} ${mrzLine2.text}',
+                                    style: const TextStyle(
+                                        color: Colors.green, fontSize: 18),
+                                  )
+                                : const Text(
+                                    ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 20),
+                                  ),
                           ),
                         ),
                         Padding(
@@ -78,6 +86,8 @@ class _MrzScanState extends State<MrzScan> {
                             width: MediaQuery.of(context).size.width / 1.2,
                             child: LinearProgressIndicator(
                               value: linearValue,
+                              color: Colors.green,
+                              minHeight: 6,
                               semanticsLabel: 'Linear progress indicator',
                             ),
                           ),
@@ -184,26 +194,18 @@ class _MrzScanState extends State<MrzScan> {
   void _processImage(InputImage image) async {
     if (_isBusy) return;
     _isBusy = true;
-
     final recognizedText = await _textRecognizer.processImage(image);
-
-
-
-
     if (mounted) {
       for (var element in recognizedText.blocks) {
         for (var line in element.lines) {
           if (kDebugMode) {
             print(line.text);
           }
-
-          
           if (!mrzLine1.isDetected) {
             await _detectMrzFirstLine(line.text);
             if (mrzLine1.isDetected) {
               setState(() {
-                print("=============================================++++++++++++++++++++++++++++++++++++++++++++++++");
-              mrzInfos = _parseMrzFirstLine(mrzLine1);
+                mrzInfos = _parseMrzFirstLine(mrzLine1);
                 linearValue += 0.5;
               });
             }
@@ -213,7 +215,7 @@ class _MrzScanState extends State<MrzScan> {
             await _detectMrz(line.text);
             if (mrzLine2.isDetected) {
               setState(() {
-              mrzInfos = _parseMrz(mrzLine2);
+                mrzInfos = _parseMrz(mrzLine2);
 
                 linearValue += 0.5;
               });
@@ -221,13 +223,14 @@ class _MrzScanState extends State<MrzScan> {
           }
 
           if (mrzLine1.isDetected && mrzLine2.isDetected) {
-            Navigator.pushReplacement(
+            Future.delayed(Duration(seconds: 1), () {
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                     builder: (context) => NfcInfo(
                           mrzInfos,
                         )));
-
+            });
             return;
           }
         }
@@ -277,6 +280,3 @@ class _MrzScanState extends State<MrzScan> {
     super.dispose();
   }
 }
-
-
-

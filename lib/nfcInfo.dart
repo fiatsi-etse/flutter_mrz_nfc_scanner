@@ -40,7 +40,6 @@ import 'package:scan/dmrtd_lib/src/lds/tlv.dart';
 import 'package:scan/dmrtd_lib/src/passport.dart';
 import 'package:scan/dmrtd_lib/src/proto/dba_keys.dart';
 import 'package:scan/jpeg2000_converter.dart';
-import 'package:scan/mrzScanner.dart';
 // import 'package:google_fonts/google_fonts.dart';
 
 
@@ -184,7 +183,6 @@ class _NfcInfoState extends State<NfcInfo> {
   final NfcProvider _nfc = NfcProvider();
   // ignore: unused_field
   late Timer _timerStateUpdater;
-  final _scrollController = ScrollController();
    MrtdData? _mrtdData;
 
    Uint8List? rawImageData;
@@ -196,7 +194,8 @@ class _NfcInfoState extends State<NfcInfo> {
    @override
   void initState() {
     docNumber = widget.mrzInfos.passportNumber;
-
+    print(widget.mrzInfos.birthDate);
+    print(widget.mrzInfos.ExpiryDate);
     dob = convertDateTimeToDateString(DateTime.parse(widget.mrzInfos.birthDate));
 
     doe = convertDateTimeToDateString(DateTime.parse(widget.mrzInfos.ExpiryDate));

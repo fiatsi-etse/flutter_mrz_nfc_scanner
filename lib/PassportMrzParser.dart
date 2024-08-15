@@ -2,7 +2,6 @@
 
 import 'package:scan/Formatter.dart';
 import 'package:scan/class/mrz_infos.dart';
-import 'package:scan/mrzScanner.dart';
 
 class PassportMrzParser {
   String mrzLine2;
