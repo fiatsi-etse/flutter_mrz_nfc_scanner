@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:scan/Home.dart';
 import 'package:scan/exceptionView.dart';
 import 'package:scan/result.dart';
@@ -24,16 +23,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Securepass',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        getPages: [
-          GetPage(name: '/', page: () => Home()),
-          GetPage(name: '/result', page: () => Result()),
-          GetPage(name: '/exceptionView', page: () => ExceptionView()),
-        ]);
+        routes: {
+          '/': (context) => const Home(),
+          '/result': (context) => const Result(),
+          '/exceptionView': (context) => const ExceptionView(),
+        }
+        );
   }
 }

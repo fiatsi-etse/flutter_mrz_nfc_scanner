@@ -21,7 +21,8 @@ class MrzScan extends StatefulWidget {
 class _MrzScanState extends State<MrzScan> {
   MrzLine mrzLine2 = MrzLine("Mrz line 2", false);
   MrzLine mrzLine1 = MrzLine("Mrz line 1", false);
-  MrzInfos mrzInfos = MrzInfos("", "", "", "", "", "", "");
+  FirstLineInfo firstLineInfo = FirstLineInfo("", "", "", "");
+  SecondLineInfo secondLineInfo = SecondLineInfo("", "", "");
 
   double linearValue = 0;
 
@@ -50,50 +51,51 @@ class _MrzScanState extends State<MrzScan> {
                   ),
                 ),
                 Positioned(
-                    top: 200, // Ajustez la position verticale si nécessaire
-                    left: 20, // Ajustez la position horizontale si nécessaire
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.person, // Icône à gauche
-                          size: 100, // Taille de l'icône
-                          color: (mrzLine1.isDetected && mrzLine2.isDetected)
-                              ? Colors.green
-                              : Colors.white
-                                  .withOpacity(0.8), // Couleur de l'icône
+                  top: 200, // Ajustez la position verticale si nécessaire
+                  left: 20, // Ajustez la position horizontale si nécessaire
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.person, // Icône à gauche
+                        size: 100, // Taille de l'icône
+                        color: (mrzLine1.isDetected && mrzLine2.isDetected)
+                            ? Colors.green
+                            : Colors.white
+                                .withOpacity(0.8), // Couleur de l'icône
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          child: (mrzLine1.isDetected && mrzLine2.isDetected)
+                              ? Text(
+                                  '${mrzLine1.text} ${mrzLine2.text}',
+                                  style: const TextStyle(
+                                      color: Colors.green, fontSize: 18),
+                                )
+                              : const Text(
+                                  ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 20),
+                                ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: SizedBox(
-                            width: MediaQuery.of(context).size.width / 1.2,
-                            child: (mrzLine1.isDetected && mrzLine2.isDetected)
-                                ? Text(
-                                    '${mrzLine1.text} ${mrzLine2.text}',
-                                    style: const TextStyle(
-                                        color: Colors.green, fontSize: 18),
-                                  )
-                                : const Text(
-                                    ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-                                    style: TextStyle(
-                                        color: Colors.white, fontSize: 20),
-                                  ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width / 1.2,
+                          child: LinearProgressIndicator(
+                            value: linearValue,
+                            color: Colors.green,
+                            minHeight: 6,
+                            semanticsLabel: 'Linear progress indicator',
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: SizedBox(
-                            width: MediaQuery.of(context).size.width / 1.2,
-                            child: LinearProgressIndicator(
-                              value: linearValue,
-                              color: Colors.green,
-                              minHeight: 6,
-                              semanticsLabel: 'Linear progress indicator',
-                            ),
-                          ),
-                        ),
-                      ],
-                    )),
+                      ),
+                    ],
+                  ),
+                ),
                 ColorFiltered(
                   colorFilter: ColorFilter.mode(
                       Colors.black.withOpacity(0.7), BlendMode.srcOut),
@@ -119,6 +121,45 @@ class _MrzScanState extends State<MrzScan> {
                     ],
                   ),
                 ),
+                const Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 150),
+                      child: CircularProgressIndicator(
+                          color: Colors.green,
+                          semanticsLabel: "Détection en cours"),
+                    )),
+                Align(
+                  alignment: Alignment.center,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 300),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const MrzScan()));
+                      },
+                      child: SizedBox(
+                        width: 150.0,
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                          ),
+                          height: 42,
+                          decoration: BoxDecoration(
+                              color: Colors.blueAccent,
+                              borderRadius: BorderRadius.circular(12)),
+                          child: const Text(
+                            "Rééssayer",
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
               ],
             ),
     );
@@ -199,38 +240,46 @@ class _MrzScanState extends State<MrzScan> {
       for (var element in recognizedText.blocks) {
         for (var line in element.lines) {
           if (kDebugMode) {
-            print(line.text);
+            // print(line.text);
           }
           if (!mrzLine1.isDetected) {
             await _detectMrzFirstLine(line.text);
             if (mrzLine1.isDetected) {
               setState(() {
-                mrzInfos = _parseMrzFirstLine(mrzLine1);
+                firstLineInfo = _parseMrzFirstLine(mrzLine1);
                 linearValue += 0.5;
               });
             }
           }
 
           if (!mrzLine2.isDetected) {
+            print(
+                'detecting-----------------------------------------------------');
             await _detectMrz(line.text);
             if (mrzLine2.isDetected) {
-              setState(() {
-                mrzInfos = _parseMrz(mrzLine2);
-
-                linearValue += 0.5;
-              });
+              print(
+                  'is detected------------------------------------------------');
+              try {
+                print('in tryyyyyyyyyyyyyyyyyyyyy---------------------------');
+                setState(() {
+                  secondLineInfo = _parseMrz(mrzLine2);
+                  linearValue += 0.5;
+                });
+              } catch (e) {
+                print('une erreur est survenue $e');
+                _processImage(image);
+              }
             }
           }
 
           if (mrzLine1.isDetected && mrzLine2.isDetected) {
-            Future.delayed(Duration(seconds: 1), () {
-              Navigator.pushReplacement(
+            print('basculement');
+            Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                     builder: (context) => NfcInfo(
-                          mrzInfos,
+                          MrzInfos(firstLineInfo, secondLineInfo),
                         )));
-            });
             return;
           }
         }
@@ -266,7 +315,12 @@ class _MrzScanState extends State<MrzScan> {
 
   _parseMrz(MrzLine mrzLine2) {
     PassportMrzParser passportMrzParser = PassportMrzParser(mrzLine2.text);
-    return passportMrzParser.parseMrz();
+    try {
+      print('in _parseMrz try');
+      return passportMrzParser.parseMrz();
+    } catch (e) {
+      rethrow;
+    }
   }
 
   _parseMrzFirstLine(MrzLine mrzLine2) {

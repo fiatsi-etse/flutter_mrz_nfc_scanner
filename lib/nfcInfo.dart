@@ -42,7 +42,6 @@ import 'package:scan/dmrtd_lib/src/proto/dba_keys.dart';
 import 'package:scan/jpeg2000_converter.dart';
 // import 'package:google_fonts/google_fonts.dart';
 
-
 class MrtdData {
   EfCardAccess? cardAccess;
   EfCardSecurity? cardSecurity;
@@ -156,15 +155,14 @@ String formatProgressMsg(String message, int percentProgress) {
 class NfcInfo extends StatefulWidget {
   MrzInfos mrzInfos;
 
-  NfcInfo(this.mrzInfos, {Key? key})
-      : super(key: key);
+  NfcInfo(this.mrzInfos, {Key? key}) : super(key: key);
 
   @override
   // ignore: library_private_types_in_public_api
   _NfcInfoState createState() => _NfcInfoState();
 }
 
-class _NfcInfoState extends State<NfcInfo> {
+class _NfcInfoState extends State<NfcInfo> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
 
   List<String> authData = [];
@@ -183,22 +181,32 @@ class _NfcInfoState extends State<NfcInfo> {
   final NfcProvider _nfc = NfcProvider();
   // ignore: unused_field
   late Timer _timerStateUpdater;
-   MrtdData? _mrtdData;
+  MrtdData? _mrtdData;
 
-   Uint8List? rawImageData;
+  Uint8List? rawImageData;
   Uint8List? rawHandSignatureData;
 
   Uint8List? jpegImage;
   Uint8List? jp2000Image;
 
-   @override
-  void initState() {
-    docNumber = widget.mrzInfos.passportNumber;
-    print(widget.mrzInfos.birthDate);
-    print(widget.mrzInfos.ExpiryDate);
-    dob = convertDateTimeToDateString(DateTime.parse(widget.mrzInfos.birthDate));
+  late AnimationController controller;
 
-    doe = convertDateTimeToDateString(DateTime.parse(widget.mrzInfos.ExpiryDate));
+  @override
+  void initState() {
+    controller = AnimationController(vsync: this);
+    docNumber = widget.mrzInfos.secondLineInfo.passportNumber;
+    print(widget.mrzInfos.secondLineInfo.birthDate);
+    print(widget.mrzInfos.secondLineInfo.expiryDate);
+
+    print(
+        'widget.mrzInfos.ExpiryDate = ${widget.mrzInfos.secondLineInfo.expiryDate}');
+    print(
+        'widget.mrzInfos.birthDate = ${widget.mrzInfos.secondLineInfo.birthDate}');
+    dob = convertDateTimeToDateString(
+        DateTime.parse(widget.mrzInfos.secondLineInfo.birthDate));
+
+    doe = convertDateTimeToDateString(
+        DateTime.parse(widget.mrzInfos.secondLineInfo.expiryDate));
 
     super.initState();
     SystemChrome.setPreferredOrientations([
@@ -215,6 +223,9 @@ class _NfcInfoState extends State<NfcInfo> {
   }
 
   Future<void> _initPlatformState() async {
+    // setState(() {
+    //   _isReading = true;
+    // });
     print('--------------');
     bool isNfcAvailable;
     try {
@@ -238,15 +249,12 @@ class _NfcInfoState extends State<NfcInfo> {
     }
   }
 
-
-
   void _readMRTD() async {
     print('readddddd');
     try {
       setState(() {
         _mrtdData = null;
         _alertMessage = "Waiting for Document tag ...";
-        _isReading = true;
       });
       print('11111111');
 
@@ -426,10 +434,7 @@ class _NfcInfoState extends State<NfcInfo> {
     }
   }
 
-
-
-
-DateTime? _getDOBDate() {
+  DateTime? _getDOBDate() {
     if (dob!.isEmpty) {
       return null;
     }
@@ -444,7 +449,7 @@ DateTime? _getDOBDate() {
     return DateFormat.yMd().parse(doe!);
   }
 
-String extractImageData(String inputHex) {
+  String extractImageData(String inputHex) {
     // Find the index of the first occurrence of 'FFD8'
     int startIndex = inputHex.indexOf('ffd8');
     // Find the index of the first occurrence of 'FFD9'
@@ -486,7 +491,6 @@ String extractImageData(String inputHex) {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -554,9 +558,9 @@ String extractImageData(String inputHex) {
           const SizedBox(
             height: 40,
           ),
-          Material(
+          Container(
               color: Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              // borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 onTap: () {
                   // _sendAuthData(authData); // changed
@@ -573,110 +577,107 @@ String extractImageData(String inputHex) {
                   decoration: BoxDecoration(
                       color: Colors.blueAccent,
                       borderRadius: BorderRadius.circular(12)),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        "Start NFC session",
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                      ),
+                      _isReading
+                          ? const Text("Reading...")
+                          : const Text(
+                              "Start NFC session",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 14),
+                            ),
                     ],
                   ),
                 ),
               )),
-              // _buildPage(context),
-              if (jpegImage != null || jp2000Image != null)
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Image",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20),
-                      ),
-                    ),
+          // // _buildPage(context),
+          if (jpegImage != null || jp2000Image != null)
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Image",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+            ),
 
-                  if (jpegImage != null)
-                    Column(
-                      children: [
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.memory(
-                            jpegImage!,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox(),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  if (jp2000Image != null)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.memory(
-                              jp2000Image!,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const SizedBox(),
-                            )),
-                      ],
-                    ),
-
-                  if (rawHandSignatureData != null)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        const SizedBox(
-                          height: 20,
-                        ),
-                        const Text("Signature",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 20)),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.memory(
-                              rawHandSignatureData!,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const SizedBox(),
-                            )),
-                      ],
-                    ),
-
-                  const SizedBox(
-                    height: 20,
+          if (jpegImage != null)
+            Column(
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.memory(
+                    jpegImage!,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox(),
                   ),
-              Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(_mrtdData != null ? "NFC Scan Data:" : "",
-                              textAlign: TextAlign.left,
-                              style: const TextStyle(
-                                  fontSize: 15.0, fontWeight: FontWeight.bold)),
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: _mrtdDataWidgets())
-                        ]),
-                  ),
+                ),
+              ],
+            ),
+
+          if (jp2000Image != null)
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  height: 10,
+                ),
+                ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(
+                      jp2000Image!,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox(),
+                    )),
+              ],
+            ),
+
+          if (rawHandSignatureData != null)
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  height: 20,
+                ),
+                const Text("Signature",
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                const SizedBox(
+                  height: 10,
+                ),
+                ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(
+                      rawHandSignatureData!,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox(),
+                    )),
+              ],
+            ),
+
+          const SizedBox(
+            height: 20,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(_mrtdData != null ? "NFC Scan Data:" : "",
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                          fontSize: 15.0, fontWeight: FontWeight.bold)),
+                  Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _mrtdDataWidgets())
+                ]),
+          ),
         ],
       ),
-
-      
     );
-
-
-    
   }
 
   List<Widget> _mrtdDataWidgets() {
@@ -736,7 +737,7 @@ String extractImageData(String inputHex) {
                       // btn Read MRTD
                       onPressed: () {
                         _initPlatformState();
-                        
+
                         // Future.delayed(Duration(seconds: 2)).then((value) {
                         //   _readMRTD();
                         // });
@@ -890,17 +891,17 @@ String extractImageData(String inputHex) {
       setState(() {});
     } catch (e) {
       jpegImage = null;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Image is not in jpeg2000")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image is not in jpeg2000")));
     }
   }
 
   Future<void> _sendAuthData(List<String> authData) async {
     const platform = MethodChannel('com.securepass.auth');
     authData.clear();
-    authData.add(widget.mrzInfos.passportNumber);
-    authData.add(widget.mrzInfos.birthDate);
-    authData.add(widget.mrzInfos.ExpiryDate);
+    authData.add(widget.mrzInfos.secondLineInfo.passportNumber);
+    authData.add(widget.mrzInfos.secondLineInfo.birthDate);
+    authData.add(widget.mrzInfos.secondLineInfo.expiryDate);
     try {
       await platform.invokeMethod('getAuthData', {"authData": authData});
     } on PlatformException catch (e) {
