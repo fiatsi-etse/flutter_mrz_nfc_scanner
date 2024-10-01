@@ -5,9 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:scan/PassportMrzParser.dart';
-import 'package:scan/class/mrz_infos.dart';
 import 'package:scan/nfcInfo.dart';
-import 'class/mrz_line.dart';
 import 'main.dart';
 
 class MrzScan extends StatefulWidget {
@@ -19,12 +17,18 @@ class MrzScan extends StatefulWidget {
 }
 
 class _MrzScanState extends State<MrzScan> {
-  MrzLine mrzLine2 = MrzLine("Mrz line 2", false);
-  MrzLine mrzLine1 = MrzLine("Mrz line 1", false);
-  FirstLineInfo firstLineInfo = FirstLineInfo("", "", "", "");
-  SecondLineInfo secondLineInfo = SecondLineInfo("", "", "");
+  MrzLine mrzLine2 = MrzLine("Mrz line 2", false, "", "", "", 0);
+  MrzLine mrzLine1 = MrzLine("Mrz line 1", false, "", "", "", 0);
+
+  MrzLine customMrzLine = MrzLine("Mrz line 1", false, "", "", "", 0);
+
+  ChipAuthenticationData chipAuthenticationData =
+      ChipAuthenticationData("", "", "");
+  UserPersonnalInfos userPersonnalInfos = UserPersonnalInfos("", "", "", "");
 
   double linearValue = 0;
+
+  int passeportType = 0;
 
   bool _isBusy = false;
   bool initialized = false;
@@ -51,51 +55,40 @@ class _MrzScanState extends State<MrzScan> {
                   ),
                 ),
                 Positioned(
-                  top: 200, // Ajustez la position verticale si nécessaire
-                  left: 20, // Ajustez la position horizontale si nécessaire
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.person, // Icône à gauche
-                        size: 100, // Taille de l'icône
-                        color: (mrzLine1.isDetected && mrzLine2.isDetected)
-                            ? Colors.green
-                            : Colors.white
-                                .withOpacity(0.8), // Couleur de l'icône
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(18.0),
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width / 1.2,
-                          child: (mrzLine1.isDetected && mrzLine2.isDetected)
-                              ? Text(
-                                  '${mrzLine1.text} ${mrzLine2.text}',
-                                  style: const TextStyle(
-                                      color: Colors.green, fontSize: 18),
-                                )
-                              : const Text(
-                                  ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
-                                  style: TextStyle(
-                                      color: Colors.white, fontSize: 20),
-                                ),
+                    top: 200, // Ajustez la position verticale si nécessaire
+                    left: 20, // Ajustez la position horizontale si nécessaire
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.person, // Icône à gauche
+                          size: 100, // Taille de l'icône
+                          color: Colors.white
+                              .withOpacity(0.8), // Couleur de l'icône
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(18.0),
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width / 1.2,
-                          child: LinearProgressIndicator(
-                            value: linearValue,
-                            color: Colors.green,
-                            minHeight: 6,
-                            semanticsLabel: 'Linear progress indicator',
+                        Padding(
+                          padding: const EdgeInsets.all(18.0),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width / 1.2,
+                            child: const Text(
+                              ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 20),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                        Padding(
+                          padding: const EdgeInsets.all(18.0),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width / 1.2,
+                            child: LinearProgressIndicator(
+                              value: linearValue,
+                              semanticsLabel: 'Linear progress indicator',
+                            ),
+                          ),
+                        ),
+                      ],
+                    )),
                 ColorFiltered(
                   colorFilter: ColorFilter.mode(
                       Colors.black.withOpacity(0.7), BlendMode.srcOut),
@@ -121,45 +114,6 @@ class _MrzScanState extends State<MrzScan> {
                     ],
                   ),
                 ),
-                const Align(
-                    alignment: Alignment.center,
-                    child: Padding(
-                      padding: EdgeInsets.only(top: 150),
-                      child: CircularProgressIndicator(
-                          color: Colors.green,
-                          semanticsLabel: "Détection en cours"),
-                    )),
-                Align(
-                  alignment: Alignment.center,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 300),
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const MrzScan()));
-                      },
-                      child: SizedBox(
-                        width: 150.0,
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                          ),
-                          height: 42,
-                          decoration: BoxDecoration(
-                              color: Colors.blueAccent,
-                              borderRadius: BorderRadius.circular(12)),
-                          child: const Text(
-                            "Rééssayer",
-                            style: TextStyle(color: Colors.white, fontSize: 14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
               ],
             ),
     );
@@ -235,92 +189,193 @@ class _MrzScanState extends State<MrzScan> {
   void _processImage(InputImage image) async {
     if (_isBusy) return;
     _isBusy = true;
+
     final recognizedText = await _textRecognizer.processImage(image);
-    if (mounted) {
-      for (var element in recognizedText.blocks) {
-        for (var line in element.lines) {
-          if (kDebugMode) {
-            // print(line.text);
-          }
-          if (!mrzLine1.isDetected) {
-            await _detectMrzFirstLine(line.text);
-            if (mrzLine1.isDetected) {
-              setState(() {
-                firstLineInfo = _parseMrzFirstLine(mrzLine1);
-                linearValue += 0.5;
-              });
-            }
-          }
 
-          if (!mrzLine2.isDetected) {
-            print(
-                'detecting-----------------------------------------------------');
-            await _detectMrz(line.text);
-            if (mrzLine2.isDetected) {
-              print(
-                  'is detected------------------------------------------------');
-              try {
-                print('in tryyyyyyyyyyyyyyyyyyyyy---------------------------');
-                setState(() {
-                  secondLineInfo = _parseMrz(mrzLine2);
-                  linearValue += 0.5;
-                });
-              } catch (e) {
-                print('une erreur est survenue $e');
-                _processImage(image);
-              }
-            }
-          }
+    if (mounted && !customMrzLine.isDetected) {
+      // print(recognizedText.blocks[0].lines[0].);
 
-          if (mrzLine1.isDetected && mrzLine2.isDetected) {
-            print('basculement');
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => NfcInfo(
-                          MrzInfos(firstLineInfo, secondLineInfo),
-                        )));
-            return;
-          }
+      List<String> textList =
+          recognizedText.blocks.map((line) => line.text).toList();
+      // print("Affichage de la liste : $textList");
+      List<String> stringsWithAngleBrackets = textList
+          .where((str) => str.replaceAll(" ", "").contains('<<<'))
+          .toList();
+      stringsWithAngleBrackets =
+          stringsWithAngleBrackets.map((e) => e.replaceAll(" ", "")).toList();
+      print('avec les mrz : $stringsWithAngleBrackets, ${stringsWithAngleBrackets.length}');
+
+      if(stringsWithAngleBrackets.isNotEmpty) {
+        for (var element in stringsWithAngleBrackets) {
+          _detectFirstLines((element));
         }
       }
+      
+      if(customMrzLine.type<3 && customMrzLine.type!=0 && customMrzLine.lineOne.isNotEmpty && customMrzLine.lineTwo.isNotEmpty) {
+        if(customMrzLine.type==1) {
+          customMrzLine.isDetected = true;
+          // TYPE 1
+          // parse type 1
+          // navigate to detail page
+        } else {
+          customMrzLine.isDetected = true;
+          // TYPE 2
+          // parse type 2
+          // navigate to detail page          
+        }
+      } else if (customMrzLine.type==3 && customMrzLine.lineOne.isNotEmpty && customMrzLine.lineTwo.isNotEmpty && customMrzLine.lineThree.isNotEmpty) {
+        customMrzLine.isDetected = true;
+        // TYPE 3
+        // parse type 3
+          // navigate to detail page
+      }
+
+      // for (var element in recognizedText.blocks) {
+      //   print("affichage de la liste : ${element.text}");
+      //   // for (var line in element.lines) {
+
+      //   //   if (kDebugMode) {
+      //   //     print(line.text);
+      //   //   }
+
+      //   //   if(!line.text.contains("<")) return;
+
+      //   //   if (!mrzLine1.isDetected) {
+      //   //     await _detectLines(line.text);
+      //   //     return;
+      //   //     // if (mrzLine1.isDetected) {
+      //   //     //   setState(() {
+      //   //     //     print("=============================================++++++++++++++++++++++++++++++++++++++++++++++++");
+      //   //     //   userPersonnalInfos = _parseMrzFirstLine(mrzLine1);
+      //   //     //     linearValue += 0.5;
+      //   //     //   });
+      //   //     // }
+      //   //   }
+
+      //   //   // if (mrzLine1.isDetected && mrzLine2.isDetected) {
+      //   //   //   Navigator.pushReplacement(
+      //   //   //       context,
+      //   //   //       MaterialPageRoute(
+      //   //   //           builder: (context) => NfcInfo(
+      //   //   //                 chipAuthenticationData,
+      //   //   //                 userPersonnalInfos: userPersonnalInfos,
+      //   //   //               )));
+
+      //   //   //   return;
+      //   //   // }
+      //   // }
+      // }
     }
     _isBusy = false;
   }
 
   //TODO improve mrz detecting
-  _detectMrz(String text) async {
-    RegExp passportTD3Line2RegExp = RegExp(
-        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
-    RegExp passportTD3Line2CustomRegExp = RegExp(
-        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{15})([0-9]{1})"); // some international passports uses this format
-    if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", "")) ||
-        passportTD3Line2CustomRegExp.hasMatch(text.replaceAll(" ", ""))) {
-      print(
-          "------------------------DETECTED 2222222222222222-----------------------");
-      mrzLine2.text = text.replaceAll(" ", "");
-      mrzLine2.isDetected = true;
-    }
-  }
+  // _detectMrz(String text) async {
+  //   RegExp passportTD3Line2RegExp = RegExp(
+  //       r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
+  //   RegExp passportTD3Line2CustomRegExp = RegExp(
+  //       r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{15})([0-9]{1})"); // some international passports uses this format
+  //   if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", "")) ||
+  //       passportTD3Line2CustomRegExp.hasMatch(text.replaceAll(" ", ""))) {
+  //     print(
+  //         "------------------------DETECTED 2222222222222222-----------------------");
+  //     mrzLine2.text = text.replaceAll(" ", "");
+  //     mrzLine2.isDetected = true;
+  //   }
+  // }
 
-  _detectMrzFirstLine(String text) async {
-    RegExp passportTD3Line2RegExp = RegExp(r'^P<[A-Z]{3}[A-Z< ]{1,39}$');
-    if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
-      print(
-          "------------------------DETECTED 11111111111-----------------------");
-      mrzLine1.text = text.replaceAll(" ", "");
-      mrzLine1.isDetected = true;
+  // _detectMrzFirstLine(String text) async {
+  //   RegExp passportTD3Line2RegExp = RegExp(r'^P<[A-Z]{3}[A-Z< ]{1,39}$');
+  //   if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
+  //     print(
+  //         "------------------------DETECTED 11111111111-----------------------");
+  //     mrzLine1.text = text.replaceAll(" ", "");
+  //     mrzLine1.isDetected = true;
+  //   }
+  // }
+
+  _detectFirstLines(String text) {
+    print("---------------------detecting-------------- $text");
+
+    // line 3
+    final RegExp passportTD3Line1RegExp = RegExp(r'^P<[A-Z]{3}[A-Z< ]{1,39}$');
+    final RegExp passportTD1Line1RegExp = RegExp(
+        r'^([ACI][A-Z0-9<]{1})([A-Z]{3})([A-Z0-9<]{9})([0-9]{1})([A-Z0-9<]{15})$');
+    final RegExp passportTD2Line1RegExp =
+        RegExp(r'^([ACI][A-Z0-9<]{1})([A-Z]{3})([A-Z0-9<]{31})$');
+
+    // line 2
+    final RegExp passportTD3Line2RegExp = RegExp(
+        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
+    final RegExp passportTD3Line2CustomRegExp = RegExp(
+        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{15})([0-9]{1})"); // some international passports uses this format
+    final RegExp passportTD1Line2RegExp = RegExp(
+        r'^([0-9]{6})([0-9]{1})([MFX<]{1})([0-9]{6})([0-9]{1})([A-Z]{3})([A-Z0-9<]{11})([0-9]{1})$');
+    final RegExp passportTD2Line2RegExp = RegExp(
+        r'^([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([MFX<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{7})([0-9]{1})$');
+
+
+    final RegExp passportTD1Line3RegExp = RegExp(r'^([A-Z0-9<]{30})$');
+
+    // les premières lignes de tous les types de passeport
+    if (customMrzLine.lineOne.isEmpty) {
+      if (passportTD1Line1RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD1 FIRST LINE IS DETECTED");
+        customMrzLine.lineOne = text.replaceAll(" ", "");
+        customMrzLine.type = 1;
+      } else if (passportTD2Line1RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD2 FIRST LINE IS DETECTED");
+        customMrzLine.lineOne = text.replaceAll(" ", "");
+        customMrzLine.type = 2;
+      } else if (passportTD3Line1RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD3 FIRST LINE IS DETECTED");
+        customMrzLine.lineOne = text.replaceAll(" ", "");
+        customMrzLine.type = 3;
+      } else  {
+      }
+    } else if(customMrzLine.lineOne.isNotEmpty) {
+      print("Line 1 already detected, type : ${customMrzLine.type}");
+    } 
+
+
+      // line 2
+    if (customMrzLine.lineTwo.isEmpty) {
+      if (passportTD1Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD1 SECOND LINE IS DETECTED");
+        customMrzLine.lineTwo = text.replaceAll(" ", "");
+        customMrzLine.type = 1;
+      } else if (passportTD2Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD2 SECOND LINE IS DETECTED");
+        customMrzLine.lineTwo = text.replaceAll(" ", "");
+        customMrzLine.type = 2;
+      } else if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD3 SECOND LINE IS DETECTED");
+        customMrzLine.lineTwo = text.replaceAll(" ", "");
+        customMrzLine.type = 3;
+      } else  {
+      }
+    } else {
+      print("Line 2 already detected, type : ${customMrzLine.type}");
     }
+    
+      // line 3
+    
+    if (customMrzLine.lineThree.isEmpty) {
+      if (passportTD1Line3RegExp.hasMatch(text.replaceAll(" ", ""))) {
+        print("TD1 THIRD LINE IS DETECTED");
+        customMrzLine.lineThree = text.replaceAll(" ", "");
+        customMrzLine.type = 3;
+      } else  {
+      }
+    } else {
+      print("Line 3 already detected, type : ${customMrzLine.type}");
+    }
+     
   }
 
   _parseMrz(MrzLine mrzLine2) {
     PassportMrzParser passportMrzParser = PassportMrzParser(mrzLine2.text);
-    try {
-      print('in _parseMrz try');
-      return passportMrzParser.parseMrz();
-    } catch (e) {
-      rethrow;
-    }
+    return passportMrzParser.parseMrz();
   }
 
   _parseMrzFirstLine(MrzLine mrzLine2) {
@@ -333,4 +388,34 @@ class _MrzScanState extends State<MrzScan> {
     controller.dispose();
     super.dispose();
   }
+}
+
+class MrzLine {
+  String text;
+  bool isDetected;
+  String lineOne;
+  String lineTwo;
+  String lineThree;
+  int type;
+
+  MrzLine(
+      this.text, this.isDetected, this.lineOne, this.lineTwo, this.lineThree, this.type);
+}
+
+class ChipAuthenticationData {
+  String passportNumber;
+  String birthDate;
+  String ExpiryDate;
+
+  ChipAuthenticationData(this.passportNumber, this.birthDate, this.ExpiryDate);
+}
+
+class UserPersonnalInfos {
+  String firstName;
+  String lastName;
+  String country;
+  String documentType;
+
+  UserPersonnalInfos(
+      this.firstName, this.lastName, this.country, this.documentType);
 }
