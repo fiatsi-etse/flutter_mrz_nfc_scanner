@@ -2,9 +2,7 @@ import 'dart:ui';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:scan/Home.dart';
-import 'package:scan/exceptionView.dart';
-import 'package:scan/result.dart';
+import 'package:scan/mrzInfo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 late List<CameraDescription> cameras;
@@ -30,10 +28,7 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
         ),
         routes: {
-          '/': (context) => const Home(),
-          '/result': (context) => const Result(),
-          '/exceptionView': (context) => const ExceptionView(),
-        }
-        );
+          '/': (context) => MrzInfo(),
+        });
   }
 }

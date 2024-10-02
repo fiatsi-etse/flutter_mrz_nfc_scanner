@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:scan/PassportMrzParser.dart';
-import 'package:scan/nfcInfo.dart';
+import 'package:scan/resultPage.dart';
 import 'main.dart';
 
 class MrzScan extends StatefulWidget {
@@ -21,10 +21,6 @@ class _MrzScanState extends State<MrzScan> {
   MrzLine mrzLine1 = MrzLine("Mrz line 1", false, "", "", "", 0);
 
   MrzLine customMrzLine = MrzLine("Mrz line 1", false, "", "", "", 0);
-
-  ChipAuthenticationData chipAuthenticationData =
-      ChipAuthenticationData("", "", "");
-  UserPersonnalInfos userPersonnalInfos = UserPersonnalInfos("", "", "", "");
 
   double linearValue = 0;
 
@@ -203,102 +199,66 @@ class _MrzScanState extends State<MrzScan> {
           .toList();
       stringsWithAngleBrackets =
           stringsWithAngleBrackets.map((e) => e.replaceAll(" ", "")).toList();
-      print('avec les mrz : $stringsWithAngleBrackets, ${stringsWithAngleBrackets.length}');
+      print(
+          'avec les mrz : $stringsWithAngleBrackets, ${stringsWithAngleBrackets.length}');
 
-      if(stringsWithAngleBrackets.isNotEmpty) {
+      if (stringsWithAngleBrackets.isNotEmpty) {
         for (var element in stringsWithAngleBrackets) {
           _detectFirstLines((element));
         }
       }
-      
-      if(customMrzLine.type<3 && customMrzLine.type!=0 && customMrzLine.lineOne.isNotEmpty && customMrzLine.lineTwo.isNotEmpty) {
-        if(customMrzLine.type==1) {
+
+      if (customMrzLine.type > 1 &&
+          customMrzLine.type != 0 &&
+          customMrzLine.lineOne.isNotEmpty &&
+          customMrzLine.lineTwo.isNotEmpty) {
+        if (customMrzLine.type == 2) {
           customMrzLine.isDetected = true;
-          // TYPE 1
-          // parse type 1
+          print("2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222");
+          // TYPE 2
+          // parse type 2
           // navigate to detail page
         } else {
           customMrzLine.isDetected = true;
-          // TYPE 2
-          // parse type 2
-          // navigate to detail page          
+          try {
+            var data =
+                parseTD3MRZ(customMrzLine.lineOne, customMrzLine.lineTwo);
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => ScanResultPage(data)));
+            return;
+          } catch (e) {
+            setState(() {
+              customMrzLine = MrzLine("Mrz line 1", false, "", "", "", 0);
+            });
+          }
         }
-      } else if (customMrzLine.type==3 && customMrzLine.lineOne.isNotEmpty && customMrzLine.lineTwo.isNotEmpty && customMrzLine.lineThree.isNotEmpty) {
+      } else if (customMrzLine.type == 1 &&
+          customMrzLine.lineOne.isNotEmpty &&
+          customMrzLine.lineTwo.isNotEmpty &&
+          customMrzLine.lineThree.isNotEmpty) {
         customMrzLine.isDetected = true;
-        // TYPE 3
-        // parse type 3
-          // navigate to detail page
+        try {
+          var data = parseTD1MRZ(customMrzLine.lineOne, customMrzLine.lineTwo,
+              customMrzLine.lineThree);
+
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (context) => ScanResultPage(data)));
+          return;
+        } catch (e) {
+          setState(() {
+            customMrzLine = MrzLine("Mrz line 1", false, "", "", "", 0);
+          });
+        }
       }
-
-      // for (var element in recognizedText.blocks) {
-      //   print("affichage de la liste : ${element.text}");
-      //   // for (var line in element.lines) {
-
-      //   //   if (kDebugMode) {
-      //   //     print(line.text);
-      //   //   }
-
-      //   //   if(!line.text.contains("<")) return;
-
-      //   //   if (!mrzLine1.isDetected) {
-      //   //     await _detectLines(line.text);
-      //   //     return;
-      //   //     // if (mrzLine1.isDetected) {
-      //   //     //   setState(() {
-      //   //     //     print("=============================================++++++++++++++++++++++++++++++++++++++++++++++++");
-      //   //     //   userPersonnalInfos = _parseMrzFirstLine(mrzLine1);
-      //   //     //     linearValue += 0.5;
-      //   //     //   });
-      //   //     // }
-      //   //   }
-
-      //   //   // if (mrzLine1.isDetected && mrzLine2.isDetected) {
-      //   //   //   Navigator.pushReplacement(
-      //   //   //       context,
-      //   //   //       MaterialPageRoute(
-      //   //   //           builder: (context) => NfcInfo(
-      //   //   //                 chipAuthenticationData,
-      //   //   //                 userPersonnalInfos: userPersonnalInfos,
-      //   //   //               )));
-
-      //   //   //   return;
-      //   //   // }
-      //   // }
-      // }
     }
     _isBusy = false;
   }
-
-  //TODO improve mrz detecting
-  // _detectMrz(String text) async {
-  //   RegExp passportTD3Line2RegExp = RegExp(
-  //       r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
-  //   RegExp passportTD3Line2CustomRegExp = RegExp(
-  //       r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{15})([0-9]{1})"); // some international passports uses this format
-  //   if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", "")) ||
-  //       passportTD3Line2CustomRegExp.hasMatch(text.replaceAll(" ", ""))) {
-  //     print(
-  //         "------------------------DETECTED 2222222222222222-----------------------");
-  //     mrzLine2.text = text.replaceAll(" ", "");
-  //     mrzLine2.isDetected = true;
-  //   }
-  // }
-
-  // _detectMrzFirstLine(String text) async {
-  //   RegExp passportTD3Line2RegExp = RegExp(r'^P<[A-Z]{3}[A-Z< ]{1,39}$');
-  //   if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
-  //     print(
-  //         "------------------------DETECTED 11111111111-----------------------");
-  //     mrzLine1.text = text.replaceAll(" ", "");
-  //     mrzLine1.isDetected = true;
-  //   }
-  // }
 
   _detectFirstLines(String text) {
     print("---------------------detecting-------------- $text");
 
     // line 3
-    final RegExp passportTD3Line1RegExp = RegExp(r'^P<[A-Z]{3}[A-Z< ]{1,39}$');
+    final RegExp passportTD3Line1RegExp = RegExp(r'^P<[A-Z]{3}[A-Z<]{1,39}$');
     final RegExp passportTD1Line1RegExp = RegExp(
         r'^([ACI][A-Z0-9<]{1})([A-Z]{3})([A-Z0-9<]{9})([0-9]{1})([A-Z0-9<]{15})$');
     final RegExp passportTD2Line1RegExp =
@@ -308,12 +268,11 @@ class _MrzScanState extends State<MrzScan> {
     final RegExp passportTD3Line2RegExp = RegExp(
         r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
     final RegExp passportTD3Line2CustomRegExp = RegExp(
-        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{15})([0-9]{1})"); // some international passports uses this format
+        r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{1,16})"); // some international passports uses this format
     final RegExp passportTD1Line2RegExp = RegExp(
         r'^([0-9]{6})([0-9]{1})([MFX<]{1})([0-9]{6})([0-9]{1})([A-Z]{3})([A-Z0-9<]{11})([0-9]{1})$');
     final RegExp passportTD2Line2RegExp = RegExp(
         r'^([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([MFX<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{7})([0-9]{1})$');
-
 
     final RegExp passportTD1Line3RegExp = RegExp(r'^([A-Z0-9<]{30})$');
 
@@ -331,14 +290,12 @@ class _MrzScanState extends State<MrzScan> {
         print("TD3 FIRST LINE IS DETECTED");
         customMrzLine.lineOne = text.replaceAll(" ", "");
         customMrzLine.type = 3;
-      } else  {
-      }
-    } else if(customMrzLine.lineOne.isNotEmpty) {
+      } else {}
+    } else if (customMrzLine.lineOne.isNotEmpty) {
       print("Line 1 already detected, type : ${customMrzLine.type}");
-    } 
+    }
 
-
-      // line 2
+    // line 2
     if (customMrzLine.lineTwo.isEmpty) {
       if (passportTD1Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
         print("TD1 SECOND LINE IS DETECTED");
@@ -352,35 +309,27 @@ class _MrzScanState extends State<MrzScan> {
         print("TD3 SECOND LINE IS DETECTED");
         customMrzLine.lineTwo = text.replaceAll(" ", "");
         customMrzLine.type = 3;
-      } else  {
-      }
+      } else {}
     } else {
       print("Line 2 already detected, type : ${customMrzLine.type}");
     }
-    
-      // line 3
-    
+
+    // line 3
+
     if (customMrzLine.lineThree.isEmpty) {
-      if (passportTD1Line3RegExp.hasMatch(text.replaceAll(" ", ""))) {
-        print("TD1 THIRD LINE IS DETECTED");
-        customMrzLine.lineThree = text.replaceAll(" ", "");
-        customMrzLine.type = 3;
-      } else  {
+      if (!text.substring(0, 2).contains("<") && !isNumeric(text[0])) {
+        if (passportTD1Line3RegExp.hasMatch(text.replaceAll(" ", ""))) {
+          print('text for line 3 : $text');
+          print("TD1 THIRD LINE IS DETECTED");
+          customMrzLine.lineThree = text.replaceAll(" ", "");
+          customMrzLine.type = 1;
+        } else {}
+      } else {
+        print('Goneeeee $text');
       }
     } else {
       print("Line 3 already detected, type : ${customMrzLine.type}");
     }
-     
-  }
-
-  _parseMrz(MrzLine mrzLine2) {
-    PassportMrzParser passportMrzParser = PassportMrzParser(mrzLine2.text);
-    return passportMrzParser.parseMrz();
-  }
-
-  _parseMrzFirstLine(MrzLine mrzLine2) {
-    PassportMrzParser passportMrzParser = PassportMrzParser(mrzLine2.text);
-    return passportMrzParser.parseFirstLine();
   }
 
   @override
@@ -398,24 +347,7 @@ class MrzLine {
   String lineThree;
   int type;
 
-  MrzLine(
-      this.text, this.isDetected, this.lineOne, this.lineTwo, this.lineThree, this.type);
+  MrzLine(this.text, this.isDetected, this.lineOne, this.lineTwo,
+      this.lineThree, this.type);
 }
 
-class ChipAuthenticationData {
-  String passportNumber;
-  String birthDate;
-  String ExpiryDate;
-
-  ChipAuthenticationData(this.passportNumber, this.birthDate, this.ExpiryDate);
-}
-
-class UserPersonnalInfos {
-  String firstName;
-  String lastName;
-  String country;
-  String documentType;
-
-  UserPersonnalInfos(
-      this.firstName, this.lastName, this.country, this.documentType);
-}
