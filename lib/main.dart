@@ -3,16 +3,13 @@ import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:scan/mrzInfo.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 late List<CameraDescription> cameras;
-late SharedPreferences sharedPreference;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
   cameras = await availableCameras();
-  sharedPreference = await SharedPreferences.getInstance();
   runApp(const MyApp());
 }
 

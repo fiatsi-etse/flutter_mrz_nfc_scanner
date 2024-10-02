@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:scan/mrzScanner.dart';
-// import 'package:google_fonts/google_fonts.dart';
-
-
 
 class MrzInfo extends StatelessWidget {
   @override

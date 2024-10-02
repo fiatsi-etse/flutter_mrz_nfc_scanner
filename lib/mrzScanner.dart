@@ -67,7 +67,7 @@ class _MrzScanState extends State<MrzScan> {
                           child: SizedBox(
                             width: MediaQuery.of(context).size.width / 1.2,
                             child: const Text(
-                              ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
+                              "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",
                               style:
                                   TextStyle(color: Colors.white, fontSize: 20),
                             ),
@@ -204,7 +204,7 @@ class _MrzScanState extends State<MrzScan> {
 
       if (stringsWithAngleBrackets.isNotEmpty) {
         for (var element in stringsWithAngleBrackets) {
-          _detectFirstLines((element));
+          _detectLines((element.replaceAll("«", "<<")));
         }
       }
 
@@ -214,7 +214,8 @@ class _MrzScanState extends State<MrzScan> {
           customMrzLine.lineTwo.isNotEmpty) {
         if (customMrzLine.type == 2) {
           customMrzLine.isDetected = true;
-          print("2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222");
+          print(
+              "2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222");
           // TYPE 2
           // parse type 2
           // navigate to detail page
@@ -254,7 +255,7 @@ class _MrzScanState extends State<MrzScan> {
     _isBusy = false;
   }
 
-  _detectFirstLines(String text) {
+  _detectLines(String text) {
     print("---------------------detecting-------------- $text");
 
     // line 3
@@ -269,6 +270,8 @@ class _MrzScanState extends State<MrzScan> {
         r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9]{1})([0-9]{1})");
     final RegExp passportTD3Line2CustomRegExp = RegExp(
         r"([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{1,16})"); // some international passports uses this format
+    final RegExp passportTD3Line2CustomRegExpV2 = RegExp(
+        r"([A-Z0-9<]{9})([0-9][A-Z]{3})([0-9]{6})([0-9][MF<][0-9]{6})([0-9][A-Z0-9<]{14}[0-9])");
     final RegExp passportTD1Line2RegExp = RegExp(
         r'^([0-9]{6})([0-9]{1})([MFX<]{1})([0-9]{6})([0-9]{1})([A-Z]{3})([A-Z0-9<]{11})([0-9]{1})$');
     final RegExp passportTD2Line2RegExp = RegExp(
@@ -305,7 +308,7 @@ class _MrzScanState extends State<MrzScan> {
         print("TD2 SECOND LINE IS DETECTED");
         customMrzLine.lineTwo = text.replaceAll(" ", "");
         customMrzLine.type = 2;
-      } else if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", ""))) {
+      } else if (passportTD3Line2RegExp.hasMatch(text.replaceAll(" ", "")) || passportTD3Line2CustomRegExpV2.hasMatch(text.replaceAll(" ", ""))) {  
         print("TD3 SECOND LINE IS DETECTED");
         customMrzLine.lineTwo = text.replaceAll(" ", "");
         customMrzLine.type = 3;
@@ -350,4 +353,3 @@ class MrzLine {
   MrzLine(this.text, this.isDetected, this.lineOne, this.lineTwo,
       this.lineThree, this.type);
 }
-
